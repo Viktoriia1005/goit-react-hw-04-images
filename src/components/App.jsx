@@ -12,6 +12,15 @@ import LoadMore from './Button'
 import Loader from './Loader';
 
 
+// export default function App () {
+//   const [searchInfo, setSearchInfo] = useState('');
+//   const [showModal, setShowModal] = useState(false);
+//   const [data, setData] = useState([]);
+//   const [error, setError] = useState(null);
+//   const [status, setStatus] = useState('idle');
+//   const [page, setPage] = useState(1);
+//   const [currImg, setCurrImg] = useState({});
+// }
 
 
 export default class App extends Component {
@@ -58,10 +67,6 @@ export default class App extends Component {
       scroll.scrollToBottom();
     }
   }
-
-  // handleSubmitForm = (searchInfo) => {
-  //   this.setState({ searchInfo, data: [], page: 1 });
-  // };
 
   handleSubmitForm = searchInfo => {
     if (this.state.searchInfo !== searchInfo) {
