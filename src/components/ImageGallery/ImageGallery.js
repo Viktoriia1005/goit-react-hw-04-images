@@ -1,9 +1,9 @@
 import s from './ImageGallery.module.css';
 
-export default function ImageGallery({ data, onOpenModal }) {
+export default function ImageGallery({ images, onOpenModal }) {
   return (
     <ul className={s.ImageGallery}>
-      {data.map(image => (
+      {images.map(image => (
         <li
           className={s.GalleryItem}
           key={image.id}

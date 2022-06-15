@@ -38,7 +38,8 @@ img {
   flex-direction: column;
 }
 
-.welcomeText {
+.welcomeText,
+.title {
   text-align: center;
   color: #303f9f;
   font-size: large;

@@ -1,136 +1,114 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import { animateScroll as scroll } from "react-scroll";
 import './App.css'
 
 import api from '../services/api'
-import Searchbar from "./Searchbar";
+import Searchbar from '../components/Searchbar/Searchbar';
 import ImageGallery from "./ImageGallery";
-import Modal from "./Modal";
-import LoadMore from './Button'
+import Modal from '../components/Modal/Modal';
+import Button from './Button'
 import Loader from './Loader';
 
 
-// export default function App () {
-//   const [searchInfo, setSearchInfo] = useState('');
-//   const [showModal, setShowModal] = useState(false);
-//   const [data, setData] = useState([]);
-//   const [error, setError] = useState(null);
-//   const [status, setStatus] = useState('idle');
-//   const [page, setPage] = useState(1);
-//   const [currImg, setCurrImg] = useState({});
-// }
+export default function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState(null);
+  const [currentImage, setCurrntImage] = useState({});
+  const [status, setStatus] = useState('idle');
 
+  useEffect(() => {
+     if (searchQuery) {
+        setStatus('pending');
+        setPage(1);
+        setImages([]);
+        findImageByName();
+        scrollToBottom();
+     }
+  }, [searchQuery]);
 
-export default class App extends Component {
-  static propTypes = {};
+  useEffect(() => {
+     if (searchQuery && page !== 1) {
+        setStatus('pending');
+        findImageByName();
+        scrollToBottom();
+     }
+  }, [page]);
 
-  state = {
-    searchInfo: "",
-    showModal: false,
-    data: [],
-    error: null,
-    status: "idle",
-    page: 1,
-    currImg: {},
+  const findImageByName = async () => {
+     try {
+        const response = await api(searchQuery, page);
+        if (response.ok) {
+           const articles = await response.json();
+           setImages(prevState => [...prevState, ...articles.hits]);
+           setStatus('resolved');
+        } else {
+           return Promise.reject(new Error(`${searchQuery} - matches not detected!`));
+        }
+     } catch (error) {
+        setError(error);
+        setStatus('rejected');
+        toast.error('The entry field must be filled in!');
+     }
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const { page, searchInfo } = this.state;
-
-    if (prevState.searchInfo !== searchInfo ) {
-      this.setState({ status: "pending", page: 1 });
-
-      api
-        .fetchImages(searchInfo, page)
-        .then((data) => data.hits)
-        .then((images) => {
-          this.setState({ data: images, status: "resolved" });
-        })
-        .catch((error) => this.setState({ error, status: "rejected" }));
-    }
-
-    if (prevState.page !== page && page !== 1) {
-      this.setState({ status: "pending" });
-
-      api
-        .fetchImages(searchInfo, page)
-        .then((data) => data.hits)
-        .then((images) =>
-          this.setState((prevState) => ({
-            data: [...prevState.data, ...images],
-            status: "resolved",
-          }))
-        )
-        .catch((error) => this.setState({ error, status: "rejected" }));
-      scroll.scrollToBottom();
-    }
-  }
-
-  handleSubmitForm = searchInfo => {
-    if (this.state.searchInfo !== searchInfo) {
-      this.setState({
-        searchInfo: searchInfo,
-        page: 1,
-      });
-    }
-    if (this.state.searchInfo === searchInfo) {
-      return toast.warning(`You already here "${searchInfo}"`);
-    }
+  const toggleModal = image => {
+     setShowModal(!showModal);
+     setCurrntImage(image);
   };
 
-  onLoadMore = () => {
-    this.setState((prevState) => ({
-      page: prevState.page + 1,
-    }));
-  };
-
-  toggleModal = (image) => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-      currImg: image,
-    }));
-  };
-
-  scrollToBottom = () => {
+  const scrollToBottom = () => {
     scroll.scrollToBottom();
   };
 
-  render() {
-    
-    const { status, data, currImg } = this.state;
-    return (
-      <div className="App">
-        <Searchbar onSubmit={this.handleSubmitForm} />
-
-        {status === "idle" && <p className='welcomeText'>Please enter your search term</p>}
-
-        {status === "pending" && (
-          <Loader />
+  return (
+     <div className='App'>
+        <Searchbar onSubmit={setSearchQuery} />
+        {status === 'idle' && (
+           <h1 className='title'>
+              Best photos still
+              <span > waiting for you</span>
+           </h1>
         )}
 
-        {status === "resolved" && (
-          <div className='AppGallery'>
-            <ImageGallery data={data} onOpenModal={this.toggleModal} />
-            {data.length > 0 && <LoadMore onLoadMore={this.onLoadMore} />}
-          </div>
+        {status === 'rejected' && <h2>{error.message}</h2>}
+
+        {status === 'resolved' && (
+           <>
+              <ImageGallery images={images} onOpenModal={toggleModal} />
+              {images.length !== 0 && (
+                 <Button onLoadMore={() => setPage(prevState => prevState + 1)} />
+              )}
+              {images.length === 0 && (
+                 <h2 >'{searchQuery}' - not detected!</h2>
+              )}
+           </>
         )}
 
-        {status === "rejected" && (
-          <div>
-            <ImageGallery data={data} />
-          </div>
+        {status === 'pending' && (
+           <>
+              <ImageGallery images={images} onOpenModal={toggleModal} />
+              <Loader/>
+           </>
         )}
 
-        {this.state.showModal && (
-          <Modal onClose={this.toggleModal}>
-            <img src={currImg.largeImageURL} alt={currImg.tags} />
-          </Modal>
+        {showModal && (
+           <Modal onClose={toggleModal}>
+              <img src={currentImage.largeImageURL} alt={currentImage.tags} />
+           </Modal>
         )}
-        <ToastContainer autoClose={2000} position="top-right" />
-
-      </div>
-    );
-  }
+        <ToastContainer
+           position="top-left"
+           autoClose={3000}
+           newestOnTop={true}
+           closeOnClick
+           pauseOnFocusLoss
+           pauseOnHover
+        />
+     </div>
+  );
 }

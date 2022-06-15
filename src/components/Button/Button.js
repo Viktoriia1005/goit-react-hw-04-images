@@ -1,6 +1,6 @@
 import s from './Button.module.css';
 
-function Button({ onLoadMore }) {
+function LoadMoreButton({ onLoadMore }) {
   return (
     <button onClick={onLoadMore} className={s.Button} type="button">
       Load more
@@ -8,4 +8,4 @@ function Button({ onLoadMore }) {
   );
 }
 
-export default Button;
+export default LoadMoreButton;
