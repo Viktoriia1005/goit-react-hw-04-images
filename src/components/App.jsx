@@ -21,40 +21,42 @@ export default function App() {
   const [currentImage, setCurrntImage] = useState({});
   const [status, setStatus] = useState('idle');
 
-  useEffect(() => {
-     if (searchQuery) {
-        setStatus('pending');
-        setPage(1);
-        setImages([]);
-        findImageByName();
-        scrollToBottom();
-     }
-  }, [searchQuery]);
 
-  useEffect(() => {
-     if (searchQuery && page !== 1) {
-        setStatus('pending');
-        findImageByName();
-        scrollToBottom();
-     }
-  }, [page]);
+  useEffect(() => { 
 
-  const findImageByName = async () => {
-     try {
-        const response = await api(searchQuery, page);
-        if (response.ok) {
-           const articles = await response.json();
-           setImages(prevState => [...prevState, ...articles.hits]);
-           setStatus('resolved');
-        } else {
-           return Promise.reject(new Error(`${searchQuery} - matches not detected!`));
-        }
-     } catch (error) {
-        setError(error);
-        setStatus('rejected');
-        toast.error('The entry field must be filled in!');
-     }
-  };
+   if (!searchQuery) {
+     return
+    }
+
+    const findImageByName = async () => {
+           try {
+              const response = await api(searchQuery, page);
+              if (response.ok) {
+                 const articles = await response.json();
+                 setImages(prevState => [...prevState, ...articles.hits]);
+                 setStatus('resolved');
+              } else {
+                 return Promise.reject(new Error(`${searchQuery} - matches not detected!`));
+              }
+           } catch (error) {
+              setError(error);
+              setStatus('rejected');
+              toast.error('The entry field must be filled in!');
+           }
+        };
+    
+   setStatus('pending');
+   findImageByName();
+    
+ }, [searchQuery, page]);
+
+ const handleFormSubmit = newSearchQuery => {
+   if (searchQuery !== newSearchQuery) {
+   setSearchQuery(newSearchQuery);
+   setImages([])
+   setPage(1)
+   }
+ };
 
   const toggleModal = image => {
      setShowModal(!showModal);
@@ -65,14 +67,17 @@ export default function App() {
     scroll.scrollToBottom();
   };
 
+  const handleButtonClick = () => {
+   setPage(prevState => prevState + 1)
+   scrollToBottom();
+ }
+
   return (
      <div className='App'>
-        <Searchbar onSubmit={setSearchQuery} />
+        <Searchbar onSubmit={handleFormSubmit} />
         {status === 'idle' && (
            <h1 className='title'>
-              Best photos still
-              <span > waiting for you</span>
-           </h1>
+              Please enter your search term</h1>
         )}
 
         {status === 'rejected' && <h2>{error.message}</h2>}
@@ -81,7 +86,7 @@ export default function App() {
            <>
               <ImageGallery images={images} onOpenModal={toggleModal} />
               {images.length !== 0 && (
-                 <Button onLoadMore={() => setPage(prevState => prevState + 1)} />
+                 <Button onLoadMore={handleButtonClick} />
               )}
               {images.length === 0 && (
                  <h2 >'{searchQuery}' - not detected!</h2>
